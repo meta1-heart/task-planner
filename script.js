@@ -6,7 +6,9 @@ var HEIGHT = window.innerHeight, WIDTH = window.innerWidth;
 
 var tasks = new Array();
 var tasksAmount = 50;
-var size = 10;
+var size = WIDTH / 100;
+var spaceSize = size * 0.1;
+var fullSize = size + spaceSize;
 var expectationLenght = 15;
 var lambda = 5000; // task coming intensivity 
 var solvingTime = 0.5; // in seconds
@@ -46,8 +48,9 @@ function createFirstTasks() {
     for(let i = 0; i < tasksAmount; i++) {
         let aTask = new Task();
         aTask.t0 = expTime(lambda);
-        aTask.x = aTask.t0;
-        aTask.y = Math.random() * HEIGHT;
+        aTask.x = aTask.t0 - (aTask.t0 % (fullSize));
+        let rnd = Math.random();
+        aTask.y = Math.round(rnd * HEIGHT - (rnd * HEIGHT % fullSize));
         aTask.L = Math.round(multiplier * GaussRand(expectationLenght, sigma));
         aTask.number = i;
         tasks.push(aTask);
@@ -60,7 +63,7 @@ function oneIterationStep() {
 }
 
 function changePosition(task) {
-    task.x -= size;
+    task.x -= fullSize;
 }
 
 function GaussRand(Mx, sigma) { // Box-Muller можно оптимизировать
@@ -82,16 +85,29 @@ function expTime(lambda) {
     
 
 
-function Draw(){
+function Draw() {
     // clear screen
     context.fillStyle = "#000000";
     context.fillRect(0, 0, WIDTH, HEIGHT);
 
-    // draw circles
-    context.fillStyle = "#53f442";
+     // line
+     context.beginPath();
+     context.lineWidth="1.5";
+     context.strokeStyle="white"; // Purple path
+     context.moveTo(fullSize * 20, 0);
+     context.lineTo(fullSize * 20, HEIGHT); 
+     context.stroke();
+
+    // draw rectangles
+    
     for(let i = 0; i < tasksAmount; i++) {
         for(let j = 0; j < tasks[i].L; j++) {
-            context.fillRect(j * size * 1.1  + tasks[i].x, tasks[i].y, size, size);
+            if (tasks[i].x + j * fullSize  < fullSize * 20 - 1) {
+                context.fillStyle = "#56f12a";
+            } else {
+                context.fillStyle =  "#f2d72b";
+            }
+            context.fillRect(j * fullSize  + tasks[i].x, tasks[i].y, size, size);
         }
     }
 }
