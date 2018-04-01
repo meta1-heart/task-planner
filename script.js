@@ -26,7 +26,13 @@ function Task() {
 }
 
 
-function main(){
+function main(form){
+    tasksAmount = Number(form.tasksAmount.value);
+    expectationLenght = Number(form.expectationLenght.value);
+    lambda = Number(form.lambda.value);
+    sigma = Number(form.sigma.value);
+    multiplier = Number(form.multiplier.value);
+    isStarted = false;
         if (!isStarted) {
             prepareCanvas();
             createFirstTasks();
@@ -82,8 +88,6 @@ function expTime(lambda) {
     
     return -lambda * Math.log(1 - Math.random());
 }
-    
-
 
 function Draw() {
     // clear screen
