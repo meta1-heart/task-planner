@@ -1,21 +1,21 @@
 var canvas, context;
 var HEIGHT = window.innerHeight, WIDTH = window.innerWidth;
 
-//document.addEventListener("DOMContentLoaded", main, true);
-
-
 var tasks = new Array();
-var tasksAmount = 50;
+var queue = new Array();
+var tasksAmount;// = 50;
 var size = WIDTH / 100;
 var spaceSize = size * 0.1;
 var fullSize = size + spaceSize;
-var expectationLenght = 15;
-var lambda = 5000; // task coming intensivity 
-var solvingTime = 0.5; // in seconds
-var sigma = 3;
+var expectationLenght;// = 15;
+var lambda;// = 5000; // task coming intensivity 
+var solvingTime;// = 0.5; // in seconds
+var sigma;// = 3;
 var multiplier = 1;
 var isStarted = false;
-
+var isPaused = false;
+var strokePosition = 20;
+var anim, timer;
 
 function Task() {
     this.x = 0;
@@ -23,23 +23,31 @@ function Task() {
     this.t0 = 0;
     this.L = 0;
     this.number = 0;
+    this.isInQueue = false;
+    this.isExecuting = false;
 }
 
 
 function main(form){
-    tasksAmount = Number(form.tasksAmount.value);
-    expectationLenght = Number(form.expectationLenght.value);
-    lambda = Number(form.lambda.value);
-    sigma = Number(form.sigma.value);
-    multiplier = Number(form.multiplier.value);
-    isStarted = false;
         if (!isStarted) {
+            getParameters.call(form);
             prepareCanvas();
             createFirstTasks();
             Draw();
             isStarted = true;
         }
-        let timer = setInterval(oneIterationStep, solvingTime * 1000);
+       oneIterationStep();
+       timer = setTimeout(function() {
+        anim = requestAnimationFrame(main);
+       }, 1000 * solvingTime);
+}
+
+function getParameters() {
+    tasksAmount = Number(this.tasksAmount.value);
+    expectationLenght = Number(this.expectationLenght.value);
+    lambda = Number(this.lambda.value);
+    sigma = Number(this.sigma.value);
+    solvingTime = Number(this.solvingTime.value);
 }
 
 function prepareCanvas() {
@@ -61,15 +69,58 @@ function createFirstTasks() {
         aTask.number = i;
         tasks.push(aTask);
     }
+    tasks.sort(tasksSort);
 }
+
+
+function tasksSort(task1, task2) {
+    let x1 = task1.t0;
+    let x2 = task2.t0;
+    if (x1 === x2) {
+        return 0;
+    }
+
+    return (x1 > x2) ? 1 : -1; // по возрастанию
+}
+    
 
 function oneIterationStep() {
     tasks.forEach(changePosition);
+    tasks.forEach(check);
     Draw();
 }
 
 function changePosition(task) {
-    task.x -= fullSize;
+    if (!task.isInQueue) {
+        task.x -= fullSize;
+    }
+}
+
+function check(task) {
+    // check for executing
+    if (task.x < fullSize * strokePosition - 1 && task.x + (task.L - 1) * fullSize > fullSize * strokePosition - 1) {
+        task.isExecuting = true;
+    } else {
+        task.isExecuting = false;
+    }
+    // check for queue
+    if (checkForExecuting() && task.x < fullSize * strokePosition + 1) {
+        task.isInQueue = true;
+    }
+    if (!checkForExecuting() || task.x < fullSize * strokePosition - 1) {
+        task.isInQueue = false;
+    }
+}
+
+function checkForExecuting() {
+    for (let i = 0; i < tasks.length; i++) {
+        if (tasks[i].isExecuting) {
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function GaussRand(Mx, sigma) { // Box-Muller можно оптимизировать
@@ -98,20 +149,40 @@ function Draw() {
      context.beginPath();
      context.lineWidth="1.5";
      context.strokeStyle="white"; // Purple path
-     context.moveTo(fullSize * 20, 0);
-     context.lineTo(fullSize * 20, HEIGHT); 
+     context.moveTo(fullSize * strokePosition, 0);
+     context.lineTo(fullSize * strokePosition, HEIGHT); 
      context.stroke();
 
     // draw rectangles
     
     for(let i = 0; i < tasksAmount; i++) {
         for(let j = 0; j < tasks[i].L; j++) {
-            if (tasks[i].x + j * fullSize  < fullSize * 20 - 1) {
+            if (tasks[i].x + j * fullSize  < fullSize * strokePosition - 1) {
                 context.fillStyle = "#56f12a";
-            } else {
+            } else if (tasks[i].isExecuting) {
                 context.fillStyle =  "#f2d72b";
+            } else {
+                context.fillStyle =  "#ffffff"
             }
             context.fillRect(j * fullSize  + tasks[i].x, tasks[i].y, size, size);
         }
+    }
+}
+
+document.addEventListener("keydown", onKeyDown);
+
+function onKeyDown(/*KeyDownEvent*/ e) {
+    if (e.keyCode == 80) { // P
+        pause();
+    }
+}
+
+function pause() {
+    if (!isPaused) {
+        clearTimeout(timer);
+        isPaused = true;
+    } else {
+        main();
+        isPaused = false;
     }
 }
