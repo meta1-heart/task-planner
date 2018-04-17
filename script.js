@@ -3,18 +3,18 @@ var HEIGHT = window.innerHeight, WIDTH = window.innerWidth;
 
 var tasks = new Array();
 var queue = new Array();
-var tasksAmount;// = 50;
+var firstQueueIndex;
+var tasksAmount;
 var size = WIDTH / 100;
 var spaceSize = size * 0.1;
 var fullSize = size + spaceSize;
-var expectationLenght;// = 15;
-var lambda;// = 5000; // task coming intensivity 
-var solvingTime;// = 0.5; // in seconds
-var sigma;// = 3;
-var multiplier = 1;
+var expectationLenght;
+var lambda;
+var solvingTime;
+var sigma;
 var isStarted = false;
 var isPaused = false;
-var strokePosition = 20;
+var strokePosition = 20 * fullSize;
 var anim, timer;
 
 function Task() {
@@ -26,7 +26,6 @@ function Task() {
     this.isInQueue = false;
     this.isExecuting = false;
 }
-
 
 function main(form){
         if (!isStarted) {
@@ -61,15 +60,16 @@ function prepareCanvas() {
 function createFirstTasks() {
     for(let i = 0; i < tasksAmount; i++) {
         let aTask = new Task();
-        aTask.t0 = expTime(lambda);
+        aTask.t0 = strokePosition + fullSize + expTime(lambda);
         aTask.x = aTask.t0 - (aTask.t0 % (fullSize));
-        let rnd = Math.random();
-        aTask.y = Math.round(rnd * HEIGHT - (rnd * HEIGHT % fullSize));
-        aTask.L = Math.round(multiplier * GaussRand(expectationLenght, sigma));
-        aTask.number = i;
+        aTask.L = Math.ceil(Math.abs(GaussRand(expectationLenght, sigma)));
         tasks.push(aTask);
     }
     tasks.sort(tasksSort);
+    for(let i = 0; i < tasksAmount; i++) {
+        tasks[i].number = i;
+        tasks[i].y = ((i + 5) * fullSize);
+    }
 }
 
 
@@ -80,35 +80,54 @@ function tasksSort(task1, task2) {
         return 0;
     }
 
-    return (x1 > x2) ? 1 : -1; // по возрастанию
+    return (x1 > x2) ? 1 : -1; // по возрастанию времени
 }
     
 
 function oneIterationStep() {
-    tasks.forEach(changePosition);
-    tasks.forEach(check);
+    for (let i = 0; i < tasks.length; i++) {
+        changePositionX(tasks[i]);
+    } 
+    for (let i = 0; i < tasks.length; i++) {
+        check(tasks[i]);
+    }
+    firstQueueIndex = queue[0];
+    if (!checkForExecuting() && firstQueueIndex !== undefined) {
+        tasks[firstQueueIndex].isInQueue = false;
+        queue.splice(0,1);
+        if (queue.length !== 0) {
+            for (let i = 0; i < tasks.length; i++) {
+                changePositionY(tasks[i]);
+            }
+        }
+    } 
     Draw();
 }
 
-function changePosition(task) {
+function changePositionX(task) {
     if (!task.isInQueue) {
         task.x -= fullSize;
     }
 }
 
+function changePositionY(task) {
+    task.y -= fullSize;
+}
+
 function check(task) {
     // check for executing
-    if (task.x < fullSize * strokePosition - 1 && task.x + (task.L - 1) * fullSize > fullSize * strokePosition - 1) {
+    if (task.x < strokePosition - 1 && task.x + (task.L - 1) * fullSize > strokePosition - 1) {
         task.isExecuting = true;
+
     } else {
         task.isExecuting = false;
     }
     // check for queue
-    if (checkForExecuting() && task.x < fullSize * strokePosition + 1) {
+    if (Number(task.x.toFixed(2)) === Number((strokePosition).toFixed(2))) {
         task.isInQueue = true;
-    }
-    if (!checkForExecuting() || task.x < fullSize * strokePosition - 1) {
-        task.isInQueue = false;
+        if (queue.indexOf(task.number) === -1){
+            queue.push(task.number);
+        }
     }
 }
 
@@ -149,15 +168,15 @@ function Draw() {
      context.beginPath();
      context.lineWidth="1.5";
      context.strokeStyle="white"; // Purple path
-     context.moveTo(fullSize * strokePosition, 0);
-     context.lineTo(fullSize * strokePosition, HEIGHT); 
+     context.moveTo(strokePosition, 0);
+     context.lineTo(strokePosition, HEIGHT); 
      context.stroke();
 
     // draw rectangles
     
     for(let i = 0; i < tasksAmount; i++) {
         for(let j = 0; j < tasks[i].L; j++) {
-            if (tasks[i].x + j * fullSize  < fullSize * strokePosition - 1) {
+            if (tasks[i].x + j * fullSize  < strokePosition - 1) {
                 context.fillStyle = "#56f12a";
             } else if (tasks[i].isExecuting) {
                 context.fillStyle =  "#f2d72b";
