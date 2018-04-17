@@ -1,19 +1,21 @@
 body
 {
-    font: 14px Arial;
+    font: 20px Arial;
     text-align: center;
 }
   
 .header
 {
-    font: 20px Arial;
+    font: 30px Arial;
     font-weight: bold;
-    margin-bottom: 20px;
+    margin-bottom: 15%;
 }
 
 .field
 {
-    margin-bottom: 15px;
+    margin-bottom: 10%;
+    margin-left: -10%;
+    font: 20px Arial;
     text-align: right;
     clear: both;
 }
@@ -21,12 +23,13 @@ body
 label
 {
     float: left;
-    margin-right: 100px;
+    margin-right: 20px;
 }
 
 .parameters__wrapper
 {
     float: left;
-    margin-left: 100px;
-    margin-top: 16px;   
+    margin-left: 35%;
+    margin-top: 20px;   
 }
+
