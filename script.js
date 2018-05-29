@@ -30,8 +30,10 @@ class Task
         this.t0 = 0;
         this.L = 0;
         this.number = 0;
+        this.isComing = true;
         this.isInQueue = false;
         this.isExecuting = false;
+        this.isCompleted = false;
     }
 }
 
@@ -107,16 +109,16 @@ function oneIterationStep()
 {
     for ( let i = 0; i < tasks.length; i++ ) 
     {
+        check( tasks[i] );
+    }
+    //
+    for ( let i = 0; i < tasks.length; i++ ) 
+    {
         if ( !tasks[i].isInQueue )
         {
             changePositionX( tasks[i] );
         }
     } 
-    //
-    for ( let i = 0; i < tasks.length; i++ ) 
-    {
-        check( tasks[i] );
-    }
     //
     firstQueueIndex = queue[0];
     if ( firstQueueIndex !== undefined ) 
@@ -134,13 +136,13 @@ function changePositionX( task )
 
 function changePositionY( task, direction ) 
 {
-    task.y -= 5 * direction * fullSize;
+    task.y -= 10 * direction * fullSize;
 }
 
 function check( task ) 
 {
     // check for executing
-    if ( task.x < strokePosition - 1 && task.x + ( task.L - 1 ) * fullSize > strokePosition - 1 ) 
+    if ( task.x < strokePosition + fullSize - 1 && task.x + ( task.L - 1 ) * fullSize > strokePosition - 1 ) 
     {
         task.isExecuting = true;
     } 
@@ -157,6 +159,14 @@ function check( task )
         {
             queue.push( task.number );
         }
+    }
+    // check for completion
+    if ( task.x + task.L * fullSize < strokePosition + 1 + fullSize && task.isCompleted === false)
+    {
+        task.isCompleted = true;
+        task.isInQueue = false;
+        let index = queue.indexOf( task.number );
+        queue.splice( index, 1 );
     }
 }
 
@@ -223,6 +233,10 @@ function draw()
             else 
             {
                 context.fillStyle = "#ffffff";
+            }
+            if ( tasks[i].isCompleted )
+            {
+                context.fillStyle = "#006400";
             }
             context.fillRect( j * fullSize  + tasks[i].x, tasks[i].y, size, size );
         }
