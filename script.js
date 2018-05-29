@@ -46,7 +46,7 @@ function start( form )
 function main()
 {
     oneIterationStep();
-    Draw();
+    draw();
     timer = setTimeout( function() {
         anim = requestAnimationFrame( main );
     }, 1000 * solvingTime );
@@ -107,40 +107,34 @@ function oneIterationStep()
 {
     for ( let i = 0; i < tasks.length; i++ ) 
     {
-        changePositionX( tasks[i] );
+        if ( !tasks[i].isInQueue )
+        {
+            changePositionX( tasks[i] );
+        }
     } 
+    //
     for ( let i = 0; i < tasks.length; i++ ) 
     {
         check( tasks[i] );
     }
     //
     firstQueueIndex = queue[0];
-    if ( !checkForExecuting() && firstQueueIndex !== undefined ) 
+    if ( firstQueueIndex !== undefined ) 
     {
-        tasks[firstQueueIndex].isInQueue = false;
+        changePositionX( tasks[firstQueueIndex] );
+        queue.push( firstQueueIndex );
         queue.splice( 0, 1 );
-        //
-        if ( queue.length !== 0 )
-        {
-            for ( let i = 0; i < tasks.length; i++ ) 
-            {
-                changePositionY( tasks[i] );
-            }
-        }
     } 
 }
 
 function changePositionX( task ) 
-{
-    if ( !task.isInQueue ) 
-    {
-        task.x -= fullSize;
-    }
+{ 
+    task.x -= fullSize;
 }
 
-function changePositionY( task ) 
+function changePositionY( task, direction ) 
 {
-    task.y -= fullSize;
+    task.y -= 5 * direction * fullSize;
 }
 
 function check( task ) 
@@ -149,7 +143,6 @@ function check( task )
     if ( task.x < strokePosition - 1 && task.x + ( task.L - 1 ) * fullSize > strokePosition - 1 ) 
     {
         task.isExecuting = true;
-
     } 
     else 
     {
@@ -200,7 +193,7 @@ function expTime( lambda )
     return -lambda * Math.log( 1 - Math.random() );
 }
 
-function Draw() 
+function draw() 
 {
     // clear screen
     context.fillStyle = "#000000";
@@ -244,18 +237,35 @@ function onKeyDown( /*KeyDownEvent*/ e )
     {
         pause();
     }
+    //
+    if ( e.keyCode == 38 ) // arrow up
+    {
+        for ( let i = 0; i < tasks.length; i++ ) 
+        {
+            changePositionY( tasks[i], 1 );
+        }
+    }
+    //
+    if ( e.keyCode == 40 ) // arrow down 
+    {
+        for ( let i = 0; i < tasks.length; i++ ) 
+        {
+            changePositionY( tasks[i], -1 );
+        }
+    }
 }
 
 function pause() 
 {
-    if ( !isPaused ) 
+    if ( isPaused === false ) 
     {
         clearTimeout( timer );
+        cancelAnimationFrame( anim );
         isPaused = true;
     } 
     else
     {
-        main();
         isPaused = false;
+        main();
     }
 }
