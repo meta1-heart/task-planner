@@ -4,7 +4,10 @@ var HEIGHT = window.innerHeight, WIDTH = window.innerWidth;
 var tasks = new Array();
 var tasksAmount;
 
-var queue = new Array();
+var queue1 = new Array();
+var queue2 = new Array();
+var queue3 = new Array();
+var queue4 = new Array();
 var firstQueueIndex;
 
 var size = WIDTH / 100;
@@ -29,8 +32,10 @@ class Task
         this.y = 0;
         this.t0 = 0;
         this.L = 0;
+        this.tmax =0;
         this.number = 0;
         this.isInQueue = false;
+        this.isCompleted = false;
         this.isExecuting = false;
     }
 }
@@ -46,7 +51,6 @@ function start( form )
 function main()
 {
     oneIterationStep();
-    Draw();
     /*timer = setTimeout( function() {
         anim = requestAnimationFrame( main );
     }, 1000 * solvingTime );*/
@@ -72,11 +76,11 @@ function prepareCanvas()
 
 function createFirstTasks() 
 {
-    for (let i = 0; i < tasksAmount; i++)  
+    for ( let i = 0; i < tasksAmount; i++ )  
     {
         let aTask = new Task();
         aTask.t0 = strokePosition + fullSize + expTime( lambda );
-        aTask.x = aTask.t0 - (aTask.t0 % (fullSize));
+        aTask.x = aTask.t0 - ( aTask.t0 % ( fullSize ) );
         aTask.L = Math.ceil( Math.abs( GaussRand( expectationLenght, sigma ) ) );
         tasks.push( aTask );
     }
@@ -105,29 +109,60 @@ function tasksSort( task1, task2 )
 
 function oneIterationStep() 
 {
-    for ( let i = 0; i < tasks.length; i++ ) 
+    if ( queue1.length != 0 ) 
     {
-        changePositionX( tasks[i] );
+        RoundRobin( queue1 );
     } 
-    for ( let i = 0; i < tasks.length; i++ ) 
+    else if ( queue2.length != 0 )
     {
-        check( tasks[i] );
+        RoundRobin( queue2 );
+    } 
+    else if ( queue3.length != 0 )
+    {
+        RoundRobin( queue3 );
+    } 
+    else if ( queue4.length != 0 )
+    {
+        FCFS( queue4 );
     }
+    tasks.forEach( task => {
+        if ( !task.isInQueue ) 
+        {
+            changePositionX( task );
+        } 
+    });
     //
-    firstQueueIndex = queue[0];
-    if ( !checkForExecuting() && firstQueueIndex !== undefined ) 
+    tasks.forEach( task => checkForExecuting( task ) );
+    tasks.forEach( task => checkForQueue( task ) );
+    //
+    Draw();
+}
+
+function RoundRobin( queue )
+{    
+    changePositionX( queue[0] );
+    if ( checkForCompletion( queue[0] ) )
     {
-        tasks[firstQueueIndex].isInQueue = false;
         queue.splice( 0, 1 );
-    } 
+    } else
+    {
+        queue.push( queue[0] );
+        queue.splice( 0, 1 );
+    }
+}
+
+function FCFS( queue )
+{
+    changePositionX( queue[0] );
+    if ( checkForCompletion( queue[0] ) )
+    {
+        queue.splice( 0, 1 );
+    };
 }
 
 function changePositionX( task ) 
 {
-    if ( !task.isInQueue ) 
-    {
-        task.x -= fullSize;
-    }
+    task.x -= fullSize;
 }
 
 function changePositionY( task, direction ) 
@@ -135,9 +170,20 @@ function changePositionY( task, direction )
     task.y -= 10 * direction * fullSize;
 }
 
-function check( task ) 
+function checkForCompletion( task ) 
 {
-    // check for executing
+    if ( task.x + task.L * fullSize < strokePosition + 1 )
+    {
+        task.isCompleted = true;
+        
+        return true;
+    }
+
+    return false;
+}
+
+function checkForExecuting ( task )
+{
     if ( task.x < strokePosition - 1 && task.x + ( task.L - 1 ) * fullSize > strokePosition - 1 ) 
     {
         task.isExecuting = true;
@@ -147,29 +193,39 @@ function check( task )
     {
         task.isExecuting = false;
     }
-    // check for queue
-    if ( Number( task.x.toFixed( 2 ) ) === Number( ( strokePosition ).toFixed( 2 ) ) ) 
+}
+
+function checkForQueue( task ) 
+{
+    if ( Number( task.x.toFixed( 2 ) ) === Number( ( strokePosition ).toFixed( 2 ) ) && !task.isInQueue ) 
     {
         task.isInQueue = true;
         //
-        if ( queue.indexOf( task.number ) === -1 )
+        if ( task.L <= 4 ) // 1
         {
-            queue.push( task.number );
+            queue1.push( task ); 
+        }
+        if ( task.L > 4 && task.L <= 8 ) // 2
+        {
+            queue2.push( task );
+            task.tmax = task.L;
+        }
+        if ( task.L > 8 && task.L <= 12 ) // 3
+        {
+            queue3.push( task );
+            task.tmax = 1.5 * task.L;
+        }
+        if ( task.L > 12 ) // 4
+        {
+            queue4.push( task );
+            task.tmax = 2 * task.L;
         }
     }
-}
-
-function checkForExecuting() 
-{
-    for ( let i = 0; i < tasks.length; i++ ) 
+    //
+    if ( task.isCompleted )
     {
-        if ( tasks[i].isExecuting ) 
-        {
-            return true;
-        }
+        task.isInQueue = false;
     }
-
-    return false;
 }
 
 //Box-Muller
