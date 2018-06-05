@@ -8,12 +8,13 @@ var queue1 = new Array();
 var queue2 = new Array();
 var queue3 = new Array();
 var queue4 = new Array();
-var firstQueueIndex;
+var queueConstants = [0, 30, 20, 15];
+var queueArray = [queue1, queue2, queue3, queue4];
 
-var size = WIDTH / 100;
+var size = HEIGHT / 100;
 var spaceSize = size * 0.1;
 var fullSize = size + spaceSize;
-var strokePosition = 20 * fullSize;
+var strokePosition = 50 * fullSize;
 
 var expectationLenght;
 var lambda;
@@ -32,7 +33,7 @@ class Task
         this.y = 0;
         this.t0 = 0;
         this.L = 0;
-        this.tmax =0;
+        this.tmax = [-1, 0];
         this.number = 0;
         this.isInQueue = false;
         this.isCompleted = false;
@@ -109,33 +110,55 @@ function tasksSort( task1, task2 )
 
 function oneIterationStep() 
 {
-    if ( queue1.length != 0 ) 
-    {
-        RoundRobin( queue1 );
-    } 
-    else if ( queue2.length != 0 )
-    {
-        RoundRobin( queue2 );
-    } 
-    else if ( queue3.length != 0 )
-    {
-        RoundRobin( queue3 );
-    } 
-    else if ( queue4.length != 0 )
-    {
-        FCFS( queue4 );
-    }
-    tasks.forEach( task => {
-        if ( !task.isInQueue ) 
-        {
-            changePositionX( task );
-        } 
-    });
+    solveTasks();
     //
     tasks.forEach( task => checkForExecuting( task ) );
     tasks.forEach( task => checkForQueue( task ) );
     //
     Draw();
+}
+
+function solveTasks()
+{
+    if ( queueArray[0].length != 0 ) 
+    {
+        RoundRobin( queueArray[0] );
+    } 
+    else if ( queueArray[1].length != 0 )
+    {
+        RoundRobin( queueArray[1] );
+    } 
+    else if ( queueArray[2].length != 0 )
+    {
+        RoundRobin( queueArray[2] );
+    } 
+    else if ( queueArray[3].length != 0 )
+    {
+        FCFS( queueArray[3] );
+    }
+    tasks.forEach( task => {
+        if ( !task.isInQueue ) 
+        {
+            changePositionX( task );
+        }
+        else
+        {
+            if ( task.tmax[1] != 0 )
+            {
+                if ( task.tmax[0] > 0 )
+                {
+                    task.tmax[0] -= 1;
+                }
+                if ( task.tmax[0] === 0 )
+                {
+                    queueArray[task.tmax[1]].splice( queueArray[task.tmax[1]].indexOf( task ), 1 );
+                    queueArray[task.tmax[1] - 1].push( task );
+                    task.tmax = [Math.ceil( queueConstants[task.tmax[1] - 1] * task.L ), task.tmax[1] - 1];
+                    
+                }
+            }
+        }
+    });
 }
 
 function RoundRobin( queue )
@@ -201,24 +224,26 @@ function checkForQueue( task )
     {
         task.isInQueue = true;
         //
-        if ( task.L <= 4 ) // 1
+        let L = task.L;
+        if ( L <= 4 ) // 1
         {
-            queue1.push( task ); 
+            queueArray[0].push( task );
+            task.tmax[1] = 0; 
         }
-        if ( task.L > 4 && task.L <= 8 ) // 2
+        if ( L > 4 && L <= 8 ) // 2
         {
-            queue2.push( task );
-            task.tmax = task.L;
+            queueArray[1].push( task );
+            task.tmax = [Math.ceil( queueConstants[1] * L ), 1];
         }
-        if ( task.L > 8 && task.L <= 12 ) // 3
+        if ( L > 8 && L <= 12 ) // 3
         {
-            queue3.push( task );
-            task.tmax = 1.5 * task.L;
+            queueArray[2].push( task );
+            task.tmax = [Math.ceil( queueConstants[2] * L ), 2];
         }
-        if ( task.L > 12 ) // 4
+        if ( L > 12 ) // 4
         {
-            queue4.push( task );
-            task.tmax = 2 * task.L;
+            queueArray[3].push( task );
+            task.tmax = [Math.ceil( queueConstants[3] * L ), 3];
         }
     }
     //
@@ -251,13 +276,13 @@ function expTime( lambda )
 function Draw() 
 {
     // clear screen
-    context.fillStyle = "#000000";
+    context.fillStyle = "#f0f0f0";
     context.fillRect( 0, 0, WIDTH, HEIGHT );
 
      // line
      context.beginPath();
      context.lineWidth = "1.5";
-     context.strokeStyle = "white";
+     context.strokeStyle = "black";
      context.moveTo( strokePosition, 0 );
      context.lineTo( strokePosition, HEIGHT ); 
      context.stroke();
@@ -269,15 +294,19 @@ function Draw()
         {
             if ( tasks[i].x + j * fullSize  < strokePosition - 1 ) 
             {
-                context.fillStyle = "#56f12a";
+                context.fillStyle = "#cfcf00";
             } 
             else if ( tasks[i].isExecuting ) 
             {
-                context.fillStyle = "#f2d72b";
+                context.fillStyle = "#b00000";
             } 
             else 
             {
-                context.fillStyle = "#ffffff";
+                context.fillStyle = "#800000";
+            }
+            if (tasks[i].isCompleted)
+            {
+                context.fillStyle = "#32cd32";
             }
             context.fillRect( j * fullSize  + tasks[i].x, tasks[i].y, size, size );
         }
@@ -293,7 +322,7 @@ function onKeyDown( /*KeyDownEvent*/ e )
         pause();
     }
     //
-    if ( e.keyCode == 38 ) // arrow up
+    if ( e.keyCode == 40 ) // arrow up
     {
         for ( let i = 0; i < tasks.length; i++ ) 
         {
@@ -302,7 +331,7 @@ function onKeyDown( /*KeyDownEvent*/ e )
         Draw();
     }
     //
-    if ( e.keyCode == 40 ) // arrow down 
+    if ( e.keyCode == 38 ) // arrow down 
     {
         for ( let i = 0; i < tasks.length; i++ ) 
         {
