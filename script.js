@@ -54,8 +54,8 @@ function start( form )
 
 function main()
 {
-    /*oneIterationStep();
-    timer = setTimeout( function() {
+    oneIterationStep();
+    /*timer = setTimeout( function() {
         anim = requestAnimationFrame( main );
     }, 1000 * solvingTime );*/
 }
