@@ -11,6 +11,9 @@ var queue4 = new Array();
 var queueConstants = [0, 30, 20, 15];
 var queueArray = [queue1, queue2, queue3, queue4];
 
+var pressCounter = 0;
+var completedTasksCounter = 0;
+
 var size = HEIGHT / 100;
 var spaceSize = size * 0.1;
 var fullSize = size + spaceSize;
@@ -51,8 +54,8 @@ function start( form )
 
 function main()
 {
-    oneIterationStep();
-    /*timer = setTimeout( function() {
+    /*oneIterationStep();
+    timer = setTimeout( function() {
         anim = requestAnimationFrame( main );
     }, 1000 * solvingTime );*/
 }
@@ -198,6 +201,7 @@ function checkForCompletion( task )
     if ( task.x + task.L * fullSize < strokePosition + 1 )
     {
         task.isCompleted = true;
+        completedTasksCounter++;
         
         return true;
     }
@@ -225,22 +229,22 @@ function checkForQueue( task )
         task.isInQueue = true;
         //
         let L = task.L;
-        if ( L <= 4 ) // 1
+        if ( L <= expectationLenght - sigma ) // 1
         {
             queueArray[0].push( task );
             task.tmax[1] = 0; 
         }
-        if ( L > 4 && L <= 8 ) // 2
+        if ( L > expectationLenght - sigma && L <= expectationLenght ) // 2
         {
             queueArray[1].push( task );
             task.tmax = [Math.ceil( queueConstants[1] * L ), 1];
         }
-        if ( L > 8 && L <= 12 ) // 3
+        if ( L > expectationLenght && L <= expectationLenght + sigma ) // 3
         {
             queueArray[2].push( task );
             task.tmax = [Math.ceil( queueConstants[2] * L ), 2];
         }
-        if ( L > 12 ) // 4
+        if ( L > expectationLenght + sigma ) // 4
         {
             queueArray[3].push( task );
             task.tmax = [Math.ceil( queueConstants[3] * L ), 3];
@@ -279,13 +283,17 @@ function Draw()
     context.fillStyle = "#f0f0f0";
     context.fillRect( 0, 0, WIDTH, HEIGHT );
 
-     // line
-     context.beginPath();
-     context.lineWidth = "1.5";
-     context.strokeStyle = "black";
-     context.moveTo( strokePosition, 0 );
-     context.lineTo( strokePosition, HEIGHT ); 
-     context.stroke();
+    // line
+    context.beginPath();
+    context.lineWidth = "1.5";
+    context.strokeStyle = "black";
+    context.moveTo( strokePosition, 0 );
+    context.lineTo( strokePosition, HEIGHT ); 
+    context.stroke();
+    context.fillStyle = "#000000";
+    context.font = "30px Arial";
+    context.fillText( completedTasksCounter + " tasks completed", WIDTH * 0.8, HEIGHT * 0.1  );
+    context.fillText( pressCounter + " kvants passed", WIDTH * 0.8, HEIGHT * 0.2 );
 
     // draw rectangles
     for( let i = 0; i < tasksAmount; i++ ) 
@@ -342,6 +350,7 @@ function onKeyDown( /*KeyDownEvent*/ e )
     //
     if ( e.keyCode == 37 ) // arrow left 
     {
+        pressCounter++;
         main();
     }
 }
